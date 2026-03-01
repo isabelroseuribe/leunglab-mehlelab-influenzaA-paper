@@ -1,0 +1,115 @@
+---
+title: "MS Data Analysis - Flu Project"
+author: "Isabel Uribe"
+date: "2023-11-09"
+output: html_document
+---
+
+Read in tidy tsv file for human sites.
+```{r}
+library(readr)
+library(tidyverse) ## for data wrangling
+library(ggplot2) ##data plotting
+library(viridis) ##color palettes
+library(svglite) ##save plots as svg
+
+pR_sites_HUMAN = read_tsv("tidy_sites_isabel.tsv", show_col_types = FALSE) %>%
+  filter(Organism == "Human") %>%
+  filter(Best_Localization >= 0.9)
+```
+
+Look at distribution of sites across amino acids (can filter score here).
+```{r}
+amino.acids_HUMAN = pR_sites_HUMAN %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Modified_Residue, Index) %>%
+  distinct(Index) 
+amino.acids_HUMAN = amino.acids_HUMAN %>%
+  group_by(Condition, Modified_Residue) %>%
+  count(Modified_Residue)
+
+write_tsv(amino.acids_HUMAN, "mod_AA_isabel_human.tsv")
+```
+
+Create heat map for number of PARP1 modification sites.
+```{r}
+map_of_PARP1 = pR_sites_HUMAN%>%
+  filter(Protein_Name == "PARP1_HUMAN") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_PARP1) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_PARP1, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.7, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "C") +
+  ggtitle(label = "Sites on PARP1") 
+
+ggsave("isabel_PARP1_sites.svg", x, width = 30, height = 20, units = "cm")
+```
+
+Create heat map for abundance of PARP1 modification sites (unfiltered for PSMs)
+```{r}
+PARP1_abundance = pR_sites_HUMAN%>%
+  filter(Protein_Name == "PARP1_HUMAN") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Index) %>%
+  summarise(sum(Total_PSMs))
+
+colnames(PARP1_abundance) = c("Condition", "Index", "Total_PSMs_for_Site")
+
+psm_list = c(1, 5, 10, 15)
+
+x = ggplot(data = PARP1_abundance, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Total_PSMs_for_Site)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.7, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Total PSMs", breaks = psm_list, labels = c("1", "5", "10", "15"), direction = -1, option = "C") +
+  ggtitle(label = "Sites on PARP1") 
+
+ggsave("isabel_PARP1_site_abundance.svg", x, width = 30, height = 20, units = "cm")
+```
+
+Make table of top 100 modified proteins in each condition based on number of sites.
+```{r}
+# top100PROT_sites = pR_sites_HUMAN%>%
+#   filter(Best_Localization >= 0.9) %>%
+#   group_by(Condition, Protein_ID) %>%
+#   summarise(num_of_sites = n_distinct(Index)) %>%
+#   top_n(100, num_of_sites) %>%
+#   arrange(Condition, desc(num_of_sites))
+# write_tsv(top100PROT_sites, "top_modified_human_proteins_sites.tsv")
+```
+ 
+Make table of top 100 modified proteins in each condition based on abundance of sites. 
+```{r}
+# top100PROT_psms = pR_sites_HUMAN%>%
+#   filter(Mod_Class == "pep_one-mod") %>%
+#   filter(Best_Localization >= 0.9) %>%
+#   group_by(Condition, Protein_ID) %>%
+#   summarise(est_abundance = sum(Total_PSMs)) %>%
+#   top_n(100, est_abundance) %>%
+#   arrange(Condition, desc(est_abundance))
+# write_tsv(top100PROT_psms, "top_modified_human_proteins_PSMs.tsv")
+```

@@ -1,0 +1,366 @@
+---
+title: "MS Data Analysis - Flu Project"
+author: "Isabel Uribe"
+date: "2023-11-09"
+output: html_document
+---
+
+Read in tidy tsv file for flu sites.
+```{r}
+library(readr)
+library(tidyverse) ## for data wrangling
+library(ggplot2) ##data plotting
+library(viridis) ##color palettes
+library(svglite) ##save plots as svg
+
+pR_sites_FLU = read_tsv("tidy_sites_Isabel.tsv", show_col_types = FALSE) %>%
+  filter(Organism != "Human") %>%
+  filter(Best_Localization >= 0.9)
+```
+
+Look at distribution of sites across amino acids (can filter score here).
+```{r}
+amino.acids_FLU = pR_sites_FLU %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Modified_Residue, Index) %>%
+  distinct(Index) 
+amino.acids_FLU = amino.acids_FLU %>%
+  group_by(Condition, Modified_Residue) %>%
+  count(Modified_Residue)
+
+write_tsv(amino.acids_FLU, "mod_AA_isabel_flu.tsv")
+```
+
+Create heat map to see number of modifications on flu proteins (can filter score here).
+```{r}
+number_sites = pR_sites_FLU %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Name) %>% 
+  distinct(Protein_Index) %>%
+  count()
+
+colnames(number_sites) = c("Condition", "Protein_Name", "Number_of_Sites")
+
+sites_list = c(1, 5, 10, 15, 20)
+
+x = ggplot(data = number_sites, mapping = aes(x = Condition, 
+                                              y = Protein_Name, 
+                                              fill = Number_of_Sites)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Number of Sites", breaks = sites_list, labels = c("1", "5", "10", "15", "20"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Flu Proteins") 
+   
+ggsave("isabel_number_of_sites_flu_proteins.svg", x, width = 30, height = 20, units = "cm")
+```
+
+Create heat map to see abundance of modifications on flu proteins.
+```{r}
+library(svglite)
+abundance_est = pR_sites_FLU %>%
+  filter(Mod_Class == "pep_one-mod") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Name) %>% 
+  summarise(sum(Total_PSMs))
+
+ab_est = as.data.frame(abundance_est)
+colnames(ab_est) = c("Condition", "Protein_Name", "Total_PSMs_for_Protein")
+
+test = ab_est %>%
+  group_by(Condition) %>%
+  summarise(max(Total_PSMs_for_Protein))
+
+psm_list = c(1, 100, 200, 300, 400, 500, 600, 700, 800)
+
+
+x = ggplot(data = ab_est, mapping = aes(x = Condition, y = Protein_Name, fill = Total_PSMs_for_Protein)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Total PSMs", breaks = psm_list, labels = c("1", "100", "200", "300", "400", "500", "600", "700", "800"), direction = -1, option = "D") +
+  ggtitle(label = "Abundance of Sites on Flu Proteins") 
+
+ggsave("isabel_site_abundance_flu_proteins.svg", x, width = 30, height = 20, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on NS1.
+```{r}
+map_of_NS1 = pR_sites_FLU %>%
+  filter(Protein_Name == "Non-structural_protein_1") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_NS1) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_NS1, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Non-structural Protein 1") 
+  
+ggsave("isabel_NS1_sites.svg", x, width = 30, height = 20, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on NP.
+```{r}
+map_of_NP = pR_sites_FLU %>%
+  filter(Protein_Name == "Nucleoprotein") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_NP) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_NP, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Nucleoprotein") 
+
+ggsave("isabel_NP_sites.svg", x, width = 30, height = 25, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on Matrix Protein 1.
+```{r}
+map_of_M1 = pR_sites_FLU %>%
+  filter(Protein_Name == "Matrix_protein_1") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_M1) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_M1, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") + 
+  ggtitle(label = "Sites on Matrix Protein 1") 
+  
+ggsave("isabel_M1_sites.svg", x, width = 30, height = 30, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on Hemagglutinin.
+```{r}
+map_of_HA = pR_sites_FLU %>%
+  filter(Protein_Name == "Hemagglutinin") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_HA) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_HA, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Hemagglutinin") 
+
+ggsave("isabel_HA_sites.svg", x, width = 30, height = 25, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on Neuraminidase.
+```{r}
+map_of_NA = pR_sites_FLU %>%
+  filter(Protein_Name == "Neuraminidase") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_NA) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_NA, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Neuraminidase") 
+
+ggsave("isabel_NA_sites.svg", x, width = 30, height = 25, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on Polymerase Basic Protein 2.
+```{r}
+map_of_PB2 = pR_sites_FLU %>%
+  filter(Protein_Name == "Polymerase_basic_protein_2") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_PB2) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_PB2, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.5, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Polymerase Basic Protein 2") 
+
+ggsave("isabel_PB2_sites.svg", x, width = 30, height = 15, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on PB1.
+```{r}
+map_of_PB1 = pR_sites_FLU %>%
+  filter(Protein_Name == "Polymerase_basic_protein_1") %>%
+  filter(Score >= 4) %>%
+  group_by(Condition, Protein_Index) %>%
+  summarise(max(Score))
+
+colnames(map_of_PB1) = c("Condition", "Index", "Site_Score")
+
+score_list = c(2, 3, 4, 5, 6, 7, 9)
+
+x = ggplot(data = map_of_PB1, mapping = aes(x = Condition, 
+                                              y = Index, 
+                                              fill = Site_Score)) +
+geom_tile() +
+  theme_classic() +
+  xlab(label = "Condition") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+        axis.text.y = element_text(size = 20),
+        plot.title = element_text(hjust = 0.7, size = 35),
+        axis.title = element_text(size = 25),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+  ggtitle(label = "Sites on Polymerase Basic Protein 1") 
+
+ggsave("isabel_PB1_sites.svg", x, width = 30, height = 20, units = "cm")
+```
+Create heat map to see presence or absence of Indices on PA.
+```{r}
+# map_of_PA = pR_sites_FLU %>%
+#   filter(Protein_Name == "Polymerase_acidic_protein") %>%
+#   filter(Score >= 4) %>%
+#   group_by(Condition, Protein_Index) %>%
+#   summarise(max(Score))
+# 
+# colnames(map_of_PA) = c("Condition", "Index", "Site_Score")
+# 
+# score_list = c(2, 3, 4, 5, 6, 7, 9)
+# 
+# x = ggplot(data = map_of_PA, mapping = aes(x = Condition,
+#                                               y = Index,
+#                                               fill = Site_Score)) +
+# geom_tile() +
+#   theme_classic() +
+#   xlab(label = "Condition") +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+#         axis.text.y = element_text(size = 20),
+#         plot.title = element_text(hjust = 0.7, size = 35),
+#         axis.title = element_text(size = 25),
+#         legend.title = element_text(size = 20),
+#         legend.text = element_text(size = 15)) +
+#   scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+#   ggtitle(label = "Sites on Polymerase Acidic Protein")
+# 
+# ggsave("isabel_PA_sites.svg", x, width = 30, height = 20, units = "cm")
+```
+
+Create heat map to see presence or absence of Indices on NEP.
+```{r}
+# map_of_NEP = pR_sites_FLU %>%
+#   filter(Protein_Name == "Nuclear_export_protein") %>%
+#   filter(Score >= 4) %>%
+#   group_by(Condition, Protein_Index) %>%
+#   summarise(max(Score))
+# 
+# colnames(map_of_NEP) = c("Condition", "Index", "Site_Score")
+# 
+# score_list = c(2, 3, 4, 5, 6, 7, 9)
+# 
+# x = ggplot(data = map_of_NEP, mapping = aes(x = Condition, 
+#                                               y = Index, 
+#                                               fill = Site_Score)) +
+# geom_tile() +
+#   theme_classic() +
+#   xlab(label = "Condition") +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 20),
+#         axis.text.y = element_text(size = 20),
+#         plot.title = element_text(hjust = 0.7, size = 35),
+#         axis.title = element_text(size = 25),
+#         legend.title = element_text(size = 20),
+#         legend.text = element_text(size = 15)) +
+#   scale_fill_viridis(name = "Max Site Score", breaks = score_list, labels = c("2", "3", "4", "5", "6", "7", "9"), direction = -1, option = "D") +
+#   ggtitle(label = "Sites on Nuclear Export Protein") 
+# 
+# ggsave("isabel_NEP_sites.svg", x, width = 30, height = 20, units = "cm")
+```

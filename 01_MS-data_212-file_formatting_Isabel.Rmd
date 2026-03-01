@@ -1,0 +1,91 @@
+---
+title: "MS Data Analysis - Flu Project"
+author: "Isabel Uribe"
+date: "2023-11-09"
+output: html_document
+---
+
+Setup and load in data sets
+```{r}
+library(tidyverse)
+mod_file_212 = read_tsv("DESKTYRCH_212.0086_isabel.tsv", show_col_types = FALSE)
+combined_ion = read_tsv("combined_ion_isabel.tsv", show_col_types = FALSE)
+```
+
+
+
+FORMATTING 212 MOD FILE
+
+
+
+Add column for Name of protein in mod_file_212
+```{r}
+mod_file_212_HUM = mod_file_212 %>%
+  filter(str_detect(Protein, "HUMAN")) 
+protein_info_HUM = str_split(mod_file_212_HUM$Protein, "\\|", simplify = TRUE)
+protein_info_HUM2 = protein_info_HUM[,3]
+protein_info_human = str_extract(protein_info_HUM2, "[^_]*_[^_]*[^_]*")
+mod_file_212_HUM$Name = protein_info_human
+
+mod_file_212_PR8 = mod_file_212 %>%
+  filter(str_detect(Protein, "Puerto_Rico"))
+protein_info_PR8 = str_split(mod_file_212_PR8$Protein, "\\|", simplify = TRUE)
+protein_info_PR8_2 = protein_info_PR8[,3]
+protein_info_pr8 = str_extract(protein_info_PR8_2, "[^_]*_[^_]*[^_]*")
+mod_file_212_PR8$Name = protein_info_pr8
+
+mod_file_212_WSN = mod_file_212 %>%
+  filter(!str_detect(Protein, "HUMAN")) %>%
+  filter(!str_detect(Protein, "Puerto_Rico")) %>%
+  filter(!str_detect(Protein, "contam"))
+protein_info_WSN = str_split(mod_file_212_WSN$Protein, "\\|", simplify = TRUE)
+protein_name = protein_info_WSN[,4]
+mod_file_212_WSN$Name = protein_name
+```
+
+Add column for Organism in mod_file_212
+```{r}
+human <- "Human"
+cond1 <- rep(human, length(mod_file_212_HUM$Index))
+mod_file_212_HUM$Organism = cond1
+
+pr8 <- "PR8"
+cond2 <- rep(pr8, length(mod_file_212_PR8$Index))
+mod_file_212_PR8$Organism = cond2
+
+wsn <- "WSN"
+cond3 <- rep(wsn, length(mod_file_212_WSN$Index))
+mod_file_212_WSN$Organism = cond3
+```
+
+Put separate data frames back together.
+```{r}
+mod_212_total = rbind(mod_file_212_HUM, mod_file_212_PR8, mod_file_212_WSN)
+
+#if "Remove contam" was unchecked during FragPipe search, mod_212_total might not have the same length as original mod_file_212 because contaminant proteins were filtered out in line 40.
+```
+
+Make data frame of C57 mods from combined ion file to make sure FragPipe didn't accidentally include these in the 212 mod file. Then remove incorrectly labeled C mods from 212 data frame
+```{r}
+all_57_idx = which(!is.na(str_match(combined_ion$`Assigned Modifications`, "57.")))
+C_57_index = rep(0, length(all_57_idx))
+for (i in 1:length(all_57_idx)) {
+  sample_assigned_mod = combined_ion[all_57_idx[i], 11]
+  start = as.numeric(combined_ion[all_57_idx[i], 5])
+  res_pos = as.numeric(str_sub(str_extract(sample_assigned_mod, "\\d+C"), 1, -2))
+  mod_pos = res_pos + start - 1
+  prot_id = as.character(combined_ion[all_57_idx[i], 13])
+  C_57_index[i] = paste(prot_id, "_C", mod_pos, sep = "")
+}
+
+all_212_index = mod_212_total$Index
+
+correct_212_mods = as.data.frame(setdiff(all_212_index, C_57_index))
+colnames(correct_212_mods) = "Index"
+
+mods_212 = semi_join(mod_212_total, correct_212_mods, by = "Index")
+
+mods_212 = mods_212 %>%
+  select(Index, `Best Localization Probability`, Name,
+         Organism, ends_with("Intensity"))
+```

@@ -1,0 +1,99 @@
+---
+title: "MS Data Analysis - Flu Project"
+author: "Isabel Uribe"
+date: "2023-11-09"
+output: html_document
+---
+
+FORMATTING COMBINED_ION
+
+
+
+Strip modified sequences to show only 212 mod in modified sequence column of combined_ion.
+```{r}
+mod_combined_ion = combined_ion %>%
+  filter(!str_detect(Protein, "contam")) %>%
+  filter(str_detect(`Modified Sequence`, "212.0086"))
+mod_combined_ion$`Stripped_Modified_Sequence` = str_remove(mod_combined_ion$`Modified Sequence`, "\\[57.0215\\]")
+mod_combined_ion$`Stripped_Modified_Sequence` = str_remove(mod_combined_ion$`Modified Sequence`, "\\[15.9949\\]")
+mod_combined_ion$`Stripped_Modified_Sequence` = str_remove(mod_combined_ion$`Modified Sequence`, "n\\[42.0106\\]")
+```
+
+Calculate position within protein that is modified in sequences with only one mod and the first site in sequences with multiple mods.
+```{r}
+mod_seq_split = str_split(mod_combined_ion$`Stripped_Modified_Sequence`, "\\[")
+x = mod_seq_split |> map(pluck, 1) |> map(nchar)
+mod_combined_ion["Modified_Position"] = mod_combined_ion$Start + unlist(x) - 1
+mod_residue = mod_seq_split |> map(pluck, 1) |> map(str_sub, -1)
+mod_combined_ion["Modified_Residue"] = unlist(mod_residue)
+```
+
+Create Index column in combined_ion for sequences with only one mod and the first site in sequences with multiple mods.
+```{r}
+mod_pos = paste(mod_combined_ion$Modified_Residue, mod_combined_ion$Modified_Position, sep = "")
+mod_combined_ion["Index"] = paste(mod_combined_ion$`Protein ID`, mod_pos, sep = "_")
+class1 = rep("pep_one-mod", length(mod_combined_ion$Index))
+mod_combined_ion$Mod_Class = class1
+```
+
+Create index for peptides with more than 1 pR(212) mods.
+```{r warning=FALSE}
+# set warning to false to avoid popping a lot of warnings
+
+# find index of peptide with more than one 212
+more_sites = which(!is.na(str_match(mod_combined_ion$`Assigned Modifications`, "212.*212")))
+# create separate data frame with only 2 mod site peptides from combined ion with index
+two_or_more = mod_combined_ion[more_sites, ]
+#Add class column so PSMs of protein are not doubly counted for these modified peptides.
+class2 = rep("pep_second-mod", length(two_or_more$Index))
+two_or_more$Mod_Class = class2
+# create empty data frame to store new rows from additional sites
+additional_sites = data.frame()
+indices = c()
+# loop through all peptides
+for (j in 1:length(more_sites)) {
+  # first get all sites in this peptide and exclude the first one
+  x = str_extract_all(two_or_more[j, 2], "[:alpha:]\\[") |>
+      map(\(x) str_sub(x, 1, -2))
+  sites = x[[1]][-1]
+  # loop through each additional site of this peptide
+  for (site in sites) {
+    # calculate new index
+    sample_assigned_mod = two_or_more[j, 11]
+    start = as.numeric(two_or_more[j, 5])
+    search_term = paste("\\d+", site, sep = "")
+    x = str_extract_all(sample_assigned_mod, search_term) 
+    positions = x[[1]] |> map(\(x) str_sub(x, 1, -2)) |> map_dbl(\(x) as.numeric(x))
+    res_pos = max(positions)
+    mod_pos = res_pos + start - 1
+    prot_id = as.character(two_or_more[j, 13])
+    new_index = paste(prot_id, "_", site, mod_pos, sep = "")
+    indices = append(indices, new_index)
+    # find the row corresponding to second site in 212 file based on new index
+    temp = mods_212[which(mods_212$Index == new_index), ]
+    temp = two_or_more[j, ]
+    temp$Index = new_index
+    # optional add corresponding row to separate data frame
+    additional_sites = rbind(additional_sites, temp)
+  }
+}
+
+write_tsv(two_or_more, "double_mod_peptides_Isabel.tsv")
+write_tsv(additional_sites, "indexed_double_mod_peptides_Isabel.tsv")
+```
+
+Use new Index for second-mod peptides to correct Modified_Residue and Modified_Position in additional sites df. Then append additional sites df to mod combined ion df.
+```{r}
+modposition = str_split(additional_sites$Index, "_", simplify = TRUE)
+modposition2 = modposition[,2]
+aminoacid = str_extract(modposition2, "[aA-zZ]+")
+residue = str_extract(modposition2, "[0-9]+")
+additional_sites$Modified_Residue = aminoacid
+additional_sites$Modified_Position = residue
+# pepseq = toupper(additional_sites$Peptide)
+# additional_sites$Peptide = pepseq
+
+mod_combined_ion = rbind(mod_combined_ion, additional_sites)
+
+write_tsv(mod_combined_ion, "indexed_mod_combined_ion_Isabel.tsv")
+```

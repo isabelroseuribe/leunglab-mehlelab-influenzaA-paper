@@ -1,0 +1,225 @@
+---
+title: "heatmap"
+author: "Isabel Uribe"
+date: "2024-02-23"
+output: html_document
+---
+
+Read in data and necessary packages.
+```{r}
+library(readr)
+library(tidyverse) ## for data wrangling
+pR.sites_isabel = read_tsv("pR_sites_isabel.tsv", show_col_types = FALSE)
+```
+
+Data wrangling.
+```{r}
+#Select only data needed for now.
+pR.sites.heatmap_isabel = pR.sites_isabel %>%
+  select(Index, Organism, `Best Localization Probability`, 
+         ends_with("Spectral Count"), ends_with("Match Type"))
+
+#Create list of conditions (unique Technical replicates).
+cons = c()
+attrs = colnames(pR.sites.heatmap_isabel)
+psms = attrs[!is.na(str_match(attrs, "Spectral Count"))]
+match = attrs[!is.na(str_match(attrs, "Match Type"))]
+for (attr in psms) {
+  cons = append(cons, str_split(attr, " ")[[1]][1])
+}
+cons = unique(cons)
+cons
+
+#Paste T/F for whether each row/condition has a psm value.
+for (con in cons) {
+  # extracts first 6 to avoid duplicate matches
+  temp_cols = psms[!is.na(str_match(psms, con))][1]
+  temp = pR.sites.heatmap_isabel %>% select(all_of(temp_cols))
+  # index range can be modified based on number of replicates
+  pR.sites.heatmap_isabel[paste(con, "psm")] = temp[,1] == 1
+}
+
+#Paste T/F for categorizing the match type for each row/condition.
+for (con in cons) {
+  #extracts
+  temp_cols2 = match[!is.na(str_match(match, con))][1]
+  temp2 = pR.sites.heatmap_isabel %>% select(all_of(temp_cols2))
+  #index range
+  pR.sites.heatmap_isabel[paste(con, "msms")] = temp2[,1] == "MS/MS"
+  pR.sites.heatmap_isabel[paste(con, "mbr")] = temp2[,1] == "MBR"
+  pR.sites.heatmap_isabel[paste(con, "unmatched")] = temp2[,1] == "unmatched"
+}
+
+#match nrow to nrow of large df
+status = data.frame(matrix(ncol = 1, nrow = nrow(pR.sites.heatmap_isabel)))
+
+#Create new df to place status markers for each row/condition.
+for (con in cons) {
+  attrs2 = colnames(pR.sites.heatmap_isabel)
+  combo = attrs2[!is.na(str_match(attrs2, "psm|msms|mbr|unmatched"))]
+  temp_cols3 = combo[!is.na(str_match(combo, con))]
+  temp3 = pR.sites.heatmap_isabel %>% select(all_of(temp_cols3))
+  #create empty column to paste values in 
+  temp3[,paste(con, "status")] = NA
+  #index MS/MS IDs
+  idx3 = which(temp3[,2]==1)
+  temp3[idx3,5] = paste("2")
+  #index MBR IDs that have PSMs
+  idx2 = which(temp3[,1]==1 & temp3[,3]==1)
+  temp3[idx2,5] = paste("2")
+  #index MBR IDs that don't have PSMs
+  idx1 = which(temp3[,1]!=1 & temp3[,3]==1)
+  temp3[idx1,5] = paste("1")
+  #index unmatched IDs
+  idx0 = which(temp3[,4]==1)
+  temp3[idx0,5] = paste("0")
+  #paste newly created status column to empty df
+  status[paste(con, "status")] = temp3[,5]
+  }
+
+# bind status columns to original df
+status = status %>%
+  select(ends_with("status"))
+status = as.data.frame(lapply(status[,1:36],as.numeric))
+pR.sites.heatmap_isabel = cbind(pR.sites.heatmap_isabel, status)
+```
+
+Now combine technical replicates down to biological reps.
+```{r}
+#T/F for categorizing new status ("match type") of each replicate
+attrs3 = colnames(pR.sites.heatmap_isabel)
+status = attrs3[!is.na(str_match(attrs3, "status"))]
+for (con in cons) {
+  # extracts first 6 to avoid duplicate matches
+  temp_cols4 = status[!is.na(str_match(status, con))][1]
+  temp4 = pR.sites.heatmap_isabel %>% select(all_of(temp_cols4))
+  #index range
+  pR.sites.heatmap_isabel[paste(con, "msms rank")] = temp4[,1] == "2"
+  pR.sites.heatmap_isabel[paste(con, "mbr rank")] = temp4[,1] == "1"
+}
+
+#Create new list of conditions (unique biological conditions).
+cons = c()
+attrs4 = colnames(pR.sites.heatmap_isabel)
+msmsrank = attrs4[!is.na(str_match(attrs4, "msms rank"))]
+mbrrank = attrs4[!is.na(str_match(attrs4, "mbr rank"))]
+
+for (attr4 in msmsrank) {
+  cons = append(cons, str_split(attr4, "_")[[1]][1])
+}
+cons = unique(cons)
+cons
+
+#Finding sum of each msms rank for each biological replicate
+for (con in cons) {
+  # extracts first 6 to avoid duplicate matches
+  temp_cols5 = msmsrank[!is.na(str_match(msmsrank, con))][1:6]
+  temp5 = pR.sites.heatmap_isabel %>% select(all_of(temp_cols5))
+  #index range
+  pR.sites.heatmap_isabel[paste(con, "1_msms rank sum")] = rowSums(temp5[, 1:3])
+  pR.sites.heatmap_isabel[paste(con, "2_msms rank sum")] = rowSums(temp5[, 4:6])
+}
+
+#Finding sum of each mbr rank for each biological replicate
+for (con in cons) {
+  # extracts first 6 to avoid duplicate matches
+  temp_cols6 = mbrrank[!is.na(str_match(mbrrank, con))][1:6]
+  temp6 = pR.sites.heatmap_isabel %>% select(all_of(temp_cols6))
+  #index range
+  pR.sites.heatmap_isabel[paste(con, "1_mbr rank sum")] = rowSums(temp6[, 1:3])
+  pR.sites.heatmap_isabel[paste(con, "2_mbr rank sum")] = rowSums(temp6[, 4:6])
+}
+
+rank_sums = pR.sites.heatmap_isabel %>%
+  select(Index, starts_with("H2O2"), starts_with("Mock"), starts_with("PR8 "), 
+         starts_with("PR8delNS1"), starts_with("WSN "), starts_with("WSNdelNS1")) %>%
+  select(Index, ends_with("rank sum"))
+
+
+#match nrow to nrow of large df
+score = data.frame(matrix(ncol = 2, nrow = nrow(pR.sites.heatmap_isabel)))
+#Create new df to place status markers for each row/condition.
+for (con in cons) {
+  attrs5 = colnames(rank_sums)
+  combo2 = attrs5[!is.na(str_match(attrs5, "rank sum"))]
+  temp_cols7 = combo2[!is.na(str_extract(combo2, con))][1:4]
+  temp7 = pR.sites.heatmap_isabel %>% select(all_of(temp_cols7))
+  #create two empty columns to paste values in for each biological rep 
+  temp7[,paste(con, "1_rep score")] = NA
+  temp7[,paste(con, "2_rep score")] = NA
+  #index highest score of 9 for each biological rep
+  idx1 = which(temp7[,1]==3 & temp7[,3]==0)
+  idx2 = which(temp7[,2]==3 & temp7[,4]==0)
+  temp7[idx1,5] = paste("9")
+  temp7[idx2,6] = paste("9")
+  #index score of 7 for each biological rep
+  idx3 = which(temp7[,1]==2 & temp7[,3]==1)
+  idx4 = which(temp7[,2]==2 & temp7[,4]==1)
+  temp7[idx3,5] = paste("7")
+  temp7[idx4,6] = paste("7")
+  #index score of 6 for each biological rep
+  idx5 = which(temp7[,1]==2 & temp7[,3]==0)
+  idx6 = which(temp7[,2]==2 & temp7[,4]==0)
+  temp7[idx5,5] = paste("6")
+  temp7[idx6,6] = paste("6")
+  #index score of 5 for each biological rep
+  idx7 = which(temp7[,1]==1 & temp7[,3]==2)
+  idx8 = which(temp7[,2]==1 & temp7[,4]==2)
+  temp7[idx7,5] = paste("5")
+  temp7[idx8,6] = paste("5")
+  #index score of 4 for each biological rep
+  idx9 = which(temp7[,1]==1 & temp7[,3]==1)
+  idx10 = which(temp7[,2]==1 & temp7[,4]==1)
+  temp7[idx9,5] = paste("4")
+  temp7[idx10,6] = paste("4")
+  #index score of 3 for each biological rep
+  idx11 = which(temp7[,1]==0 & temp7[,3]==3)
+  idx12 = which(temp7[,2]==0 & temp7[,4]==3)
+  temp7[idx11,5] = paste("3")
+  temp7[idx12,6] = paste("3")
+  #index score of 2 for each biological rep
+  idx13 = which(temp7[,1]==0 & temp7[,3]==2)
+  idx14 = which(temp7[,2]==0 & temp7[,4]==2)
+  temp7[idx13,5] = paste("2")
+  temp7[idx14,6] = paste("2")
+  #paste newly created status column to empty df
+  score[,paste(con, "1_rep score")] = temp7[,5]
+  score[,paste(con, "2_rep score")] = temp7[,6]
+}
+
+#Replace NA values with 0
+score[,3:14][is.na(score[,3:14])] = 0
+
+# bind score columns to original df
+score = as.data.frame(lapply(score[,3:14],as.numeric))
+pR.sites_isabel = cbind(pR.sites_isabel, score)
+pR.sites_isabel_scored = pR.sites_isabel %>%
+  select(!ends_with("psm")) %>%
+  select(!ends_with("int")) %>%
+  select(!ends_with("msms")) %>%
+  select(!ends_with("mbr")) %>%
+  select(!ends_with("unmatched"))
+
+#Create Protein_Name Index and filter for localization above 0.6.
+pR.sites_isabel_scored = pR.sites_isabel_scored %>% 
+  mutate(across(Name, str_replace, "PA_I34A1", "Polymerase_acidic_protein")) %>%
+  mutate(across(Name, str_replace, "PAX_I34A1", "Protein_PA-X")) %>%
+  mutate(across(Name, str_replace, "RDRP_I34A1", "Polymerase_basic_protein_1")) %>%
+  mutate(across(Name, str_replace, "RNA-directed_RNA_polymerase_catalytic_subunit",
+                "Polymerase_basic_protein_1")) %>%
+  mutate(across(Name, str_replace, "PB1F2_I34A1", "Protein_PB1-F2")) %>%
+  mutate(across(Name, str_replace, "PB2_I34A1", "Polymerase_basic_protein_2")) %>%
+  mutate(across(Name, str_replace, "PB2S1_I34A1", "PB2S1")) %>%
+  mutate(across(Name, str_replace, "NCAP_I34A1", "Nucleoprotein")) %>%
+  mutate(across(Name, str_replace, "HEMA_I34A1", "Hemagglutinin")) %>%
+  mutate(across(Name, str_replace, "NRAM_I34A1", "Neuraminidase")) %>%
+  mutate(across(Name, str_replace, "M1_I34A1", "Matrix_protein_1")) %>%
+  mutate(across(Name, str_replace, "M2_I34A1", "Matrix_protein_2")) %>%
+  mutate(across(Name, str_replace, "NS1_I34A1", "Non-structural_protein_1")) %>%
+  mutate(across(Name, str_replace, "NEP_I34A1", "Nuclear_export_protein")) %>%
+  mutate("Protein_Index" = paste(Name, Modified_Residue, Modified_Position, sep = "_")) %>%
+  filter(`Best Localization Probability` >= 0.60)
+
+#write tsv file to be used for ggplot script.
+write_tsv(pR.sites_isabel_scored, "pR_sites_isabel_scored.tsv")
+```

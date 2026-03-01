@@ -1,0 +1,246 @@
+---
+title: "condition comparisons"
+author: "Isabel Uribe"
+date: "2024-02-20"
+output: html_document
+---
+
+Read in finalized data frames from each experiment.
+```{r}
+library(tidyverse)
+pR.sites = read_tsv("tidy_sites_Isabel.tsv", show_col_types = FALSE) %>%
+  mutate(Gene = str_remove(Gene, "_.+")) %>%
+  filter(Score >= 4)
+```
+
+
+
+Find modified proteins that occur in both biological replicates in data set.
+```{r}
+#First summarize data to find unique modified proteins;keep condition, gene, score, and total_psm data.
+pR.max_score = pR.sites %>%
+  filter(Best_Localization >= 0.6) %>%
+  group_by(Condition, Protein_Name) %>% 
+  summarise(max(Score))
+
+pR.max_psm = pR.sites %>%
+  filter(Best_Localization >= 0.6) %>%
+  filter(Mod_Class == "pep_one-mod") %>%
+  group_by(Condition, Protein_Name) %>% 
+  summarise(sum(Total_PSMs))
+
+pR.sites.bio = full_join(pR.max_score, pR.max_psm, by = c("Condition", "Protein_Name"))
+
+
+#Subset unique modified proteins df into biological reps.
+pR.sites.bio_0.6_h2o2_1 = pR.sites.bio %>%
+  filter(Condition == "h2o2_1") 
+pR.sites.bio_0.6_h2o2_1 = pR.sites.bio_0.6_h2o2_1[,2:4]
+colnames(pR.sites.bio_0.6_h2o2_1) = c("Protein_Name", "h2o2 1_Score", "h2o2 1_PSMs")
+
+pR.sites.bio_0.6_h2o2_2 = pR.sites.bio %>%
+  filter(Condition == "h2o2_2")
+pR.sites.bio_0.6_h2o2_2 = pR.sites.bio_0.6_h2o2_2[,2:4]
+colnames(pR.sites.bio_0.6_h2o2_2) = c("Protein_Name", "h2o2 2_Score", "h2o2 2_PSMs")
+
+pR.sites.bio_0.6_mock_1 = pR.sites.bio %>%
+  filter(Condition == "mock_1") 
+pR.sites.bio_0.6_mock_1 = pR.sites.bio_0.6_mock_1[,2:4]
+colnames(pR.sites.bio_0.6_mock_1) = c("Protein_Name", "Mock 1_Score", "Mock 1_PSMs")
+
+pR.sites.bio_0.6_mock_2 = pR.sites.bio %>%
+  filter(Condition == "mock_2")
+pR.sites.bio_0.6_mock_2 = pR.sites.bio_0.6_mock_2[,2:4]
+colnames(pR.sites.bio_0.6_mock_2) = c("Protein_Name", "Mock 2_Score", "Mock 2_PSMs")
+
+pR.sites.bio_0.6_pr8_1 = pR.sites.bio %>%
+  filter(Condition == "pr8_1") 
+pR.sites.bio_0.6_pr8_1 = pR.sites.bio_0.6_pr8_1[,2:4]
+colnames(pR.sites.bio_0.6_pr8_1) = c("Protein_Name", "PR8 1_Score", "PR8 1_PSMs")
+
+pR.sites.bio_0.6_pr8_2 = pR.sites.bio %>%
+  filter(Condition == "pr8_2")
+pR.sites.bio_0.6_pr8_2 = pR.sites.bio_0.6_pr8_2[,2:4]
+colnames(pR.sites.bio_0.6_pr8_2) = c("Protein_Name", "PR8 2_Score", "PR8 2_PSMs")
+
+pR.sites.bio_0.6_pr8delns1_1 = pR.sites.bio %>%
+  filter(Condition == "pr8delns1_1") 
+pR.sites.bio_0.6_pr8delns1_1 = pR.sites.bio_0.6_pr8delns1_1[,2:4]
+colnames(pR.sites.bio_0.6_pr8delns1_1) = c("Protein_Name", "PR8delNS1 1_Score", "PR8delNS1 1_PSMs")
+
+pR.sites.bio_0.6_pr8delns1_2 = pR.sites.bio %>%
+  filter(Condition == "pr8delns1_2")
+pR.sites.bio_0.6_pr8delns1_2 = pR.sites.bio_0.6_pr8delns1_2[,2:4]
+colnames(pR.sites.bio_0.6_pr8delns1_2) = c("Protein_Name", "PR8delNS1 2_Score", "PR8delNS1 2_PSMs")
+
+pR.sites.bio_0.6_wsn_1 = pR.sites.bio %>%
+  filter(Condition == "wsn_1") 
+pR.sites.bio_0.6_wsn_1 = pR.sites.bio_0.6_wsn_1[,2:4]
+colnames(pR.sites.bio_0.6_wsn_1) = c("Protein_Name", "WSN 1_Score", "WSN 1_PSMs")
+
+pR.sites.bio_0.6_wsn_2 = pR.sites.bio %>%
+  filter(Condition == "wsn_2")
+pR.sites.bio_0.6_wsn_2 = pR.sites.bio_0.6_wsn_2[,2:4]
+colnames(pR.sites.bio_0.6_wsn_2) = c("Protein_Name", "WSN 2_Score", "WSN 2_PSMs")
+
+pR.sites.bio_0.6_wsndelns1_1 = pR.sites.bio %>%
+  filter(Condition == "wsndelns1_1")
+pR.sites.bio_0.6_wsndelns1_1 = pR.sites.bio_0.6_wsndelns1_1[,2:4]
+colnames(pR.sites.bio_0.6_wsndelns1_1) = c("Protein_Name", "WSNdelNS1 1_Score", "WSNdelNS1 1_PSMs")
+
+pR.sites.bio_0.6_wsndelns1_2 = pR.sites.bio %>%
+  filter(Condition == "wsndelns1_2")
+pR.sites.bio_0.6_wsndelns1_2 = pR.sites.bio_0.6_wsndelns1_2[,2:4]
+colnames(pR.sites.bio_0.6_wsndelns1_2) = c("Protein_Name", "WSNdelNS1 2_Score", "WSNdelNS1 2_PSMs")
+
+
+#Find unique modified proteins observed in both bio rep data sets.
+pR.sites.bio_0.6_h2o2 = inner_join(pR.sites.bio_0.6_h2o2_1, pR.sites.bio_0.6_h2o2_2, by = "Protein_Name")
+
+pR.sites.bio_0.6_mock = inner_join(pR.sites.bio_0.6_mock_1, pR.sites.bio_0.6_mock_2, by = "Protein_Name")
+
+pR.sites.bio_0.6_pr8 = inner_join(pR.sites.bio_0.6_pr8_1, pR.sites.bio_0.6_pr8_2, by = "Protein_Name")
+
+pR.sites.bio_0.6_pr8delns1 = inner_join(pR.sites.bio_0.6_pr8delns1_1, pR.sites.bio_0.6_pr8delns1_2, by = "Protein_Name")
+
+pR.sites.bio_0.6_wsn = inner_join(pR.sites.bio_0.6_wsn_1, pR.sites.bio_0.6_wsn_2, by = "Protein_Name")
+
+pR.sites.bio_0.6_wsndelns1 = inner_join(pR.sites.bio_0.6_wsndelns1_1, pR.sites.bio_0.6_wsndelns1_2, by = "Protein_Name")
+
+write_tsv(pR.sites.bio_0.6_h2o2, "pR.proteins_h2o2_isabel.tsv")
+write_tsv(pR.sites.bio_0.6_mock, "pR.proteins_mock_isabel.tsv")
+write_tsv(pR.sites.bio_0.6_pr8, "pR.proteins_pr8_isabel.tsv")
+write_tsv(pR.sites.bio_0.6_pr8delns1, "pR.proteins_pR8delns1_isabel.tsv")
+write_tsv(pR.sites.bio_0.6_wsn, "pR.proteins_wsn_isabel.tsv")
+write_tsv(pR.sites.bio_0.6_wsndelns1, "pR.proteins_wsndelns1_isabel.tsv")
+```
+
+Find modified proteins/proteins that are in each stress condition (but not in mock).
+```{r}
+# pR.sites.unique_h2o2 = anti_join(pR.sites.bio_0.6_h2o2, pR.sites.bio_0.6_mock, by = "Protein_Name")
+# pR.sites.unique_pr8 = anti_join(pR.sites.bio_0.6_pr8, pR.sites.bio_0.6_mock, by = "Protein_Name")
+# pR.sites.unique_pr8delns1 = anti_join(pR.sites.bio_0.6_pr8delns1, pR.sites.bio_0.6_mock, by = "Protein_Name")
+# pR.sites.unique_wsn = anti_join(pR.sites.bio_0.6_wsn, pR.sites.bio_0.6_mock, by = "Protein_Name")
+# pR.sites.unique_wsndelns1 = anti_join(pR.sites.bio_0.6_wsndelns1, pR.sites.bio_0.6_mock, by = "Protein_Name")
+# 
+# write_tsv(pR.sites.unique_h2o2, "pR.proteins.unique_h2o2_isabel.tsv")
+# write_tsv(pR.sites.unique_pr8, "pR.proteins.unique_pr8_isabel.tsv")
+# write_tsv(pR.sites.unique_pr8delns1, "pR.proteins.unique_pR8delns1_isabel.tsv")
+# write_tsv(pR.sites.unique_wsn, "pR.proteins.unique_wsn_isabel.tsv")
+# write_tsv(pR.sites.unique_wsndelns1, "pR.proteins.unique_wsndelns1_isabel.tsv")
+```
+
+
+
+Find modified sites that occur in both biological replicates in data set.
+```{r}
+#First summarize data to find unique modified proteins;keep condition, gene, score, and total_psm data.
+pR.max_score = pR.sites %>%
+  filter(Best_Localization >= 0.9) %>%
+  group_by(Condition, Protein_Index) %>% 
+  summarise(max(Score))
+
+pR.max_psm = pR.sites %>%
+  filter(Best_Localization >= 0.9) %>%
+  group_by(Condition, Protein_Index) %>% 
+  summarise(sum(Total_PSMs))
+
+pR.sites.bio = full_join(pR.max_score, pR.max_psm, by = c("Condition", "Protein_Index"))
+
+
+#Subset unique modified proteins df into biological reps.
+pR.sites.bio_h2o2_1 = pR.sites.bio %>%
+  filter(Condition == "h2o2_1") 
+pR.sites.bio_h2o2_1 = pR.sites.bio_h2o2_1[,2:4]
+colnames(pR.sites.bio_h2o2_1) = c("Protein_Index", "H2O2 1_Score", "H2O2 1_PSMs")
+
+pR.sites.bio_h2o2_2 = pR.sites.bio %>%
+  filter(Condition == "h2o2_2")
+pR.sites.bio_h2o2_2 = pR.sites.bio_h2o2_2[,2:4]
+colnames(pR.sites.bio_h2o2_2) = c("Protein_Index", "H2O2 2_Score", "H2O2 2_PSMs")
+
+pR.sites.bio_mock_1 = pR.sites.bio %>%
+  filter(Condition == "mock_1") 
+pR.sites.bio_mock_1 = pR.sites.bio_mock_1[,2:4]
+colnames(pR.sites.bio_mock_1) = c("Protein_Index", "Mock 1_Score", "Mock 1_PSMs")
+
+pR.sites.bio_mock_2 = pR.sites.bio %>%
+  filter(Condition == "mock_2")
+pR.sites.bio_mock_2 = pR.sites.bio_mock_2[,2:4]
+colnames(pR.sites.bio_mock_2) = c("Protein_Index", "Mock 2_Score", "Mock 2_PSMs")
+
+pR.sites.bio_pr8_1 = pR.sites.bio %>%
+  filter(Condition == "pr8_1") 
+pR.sites.bio_pr8_1 = pR.sites.bio_pr8_1[,2:4]
+colnames(pR.sites.bio_pr8_1) = c("Protein_Index", "PR8 1_Score", "PR8 1_PSMs")
+
+pR.sites.bio_pr8_2 = pR.sites.bio %>%
+  filter(Condition == "pr8_2")
+pR.sites.bio_pr8_2 = pR.sites.bio_pr8_2[,2:4]
+colnames(pR.sites.bio_pr8_2) = c("Protein_Index", "PR8 2_Score", "PR8 2_PSMs")
+
+pR.sites.bio_pr8delns1_1 = pR.sites.bio %>%
+  filter(Condition == "pr8delns1_1") 
+pR.sites.bio_pr8delns1_1 = pR.sites.bio_pr8delns1_1[,2:4]
+colnames(pR.sites.bio_pr8delns1_1) = c("Protein_Index", "PR8delNS1 1_Score", "PR8delNS1 1_PSMs")
+
+pR.sites.bio_pr8delns1_2 = pR.sites.bio %>%
+  filter(Condition == "pr8delns1_2")
+pR.sites.bio_pr8delns1_2 = pR.sites.bio_pr8delns1_2[,2:4]
+colnames(pR.sites.bio_pr8delns1_2) = c("Protein_Index", "PR8delNS1 2_Score", "PR8delNS1 2_PSMs")
+
+pR.sites.bio_wsn_1 = pR.sites.bio %>%
+  filter(Condition == "wsn_1") 
+pR.sites.bio_wsn_1 = pR.sites.bio_wsn_1[,2:4]
+colnames(pR.sites.bio_wsn_1) = c("Protein_Index", "WSN 1_Score", "WSN 1_PSMs")
+
+pR.sites.bio_wsn_2 = pR.sites.bio %>%
+  filter(Condition == "wsn_2")
+pR.sites.bio_wsn_2 = pR.sites.bio_wsn_2[,2:4]
+colnames(pR.sites.bio_wsn_2) = c("Protein_Index", "WSN 2_Score", "WSN 2_PSMs")
+
+pR.sites.bio_wsndelns1_1 = pR.sites.bio %>%
+  filter(Condition == "wsndelns1_1")
+pR.sites.bio_wsndelns1_1 = pR.sites.bio_wsndelns1_1[,2:4]
+colnames(pR.sites.bio_wsndelns1_1) = c("Protein_Index", "WSNdelNS1 1_Score", "WSNdelNS1 1_PSMs")
+
+pR.sites.bio_wsndelns1_2 = pR.sites.bio %>%
+  filter(Condition == "wsndelns1_2")
+pR.sites.bio_wsndelns1_2 = pR.sites.bio_wsndelns1_2[,2:4]
+colnames(pR.sites.bio_wsndelns1_2) = c("Protein_Index", "WSNdelNS1 2_Score", "WSNdelNS1 2_PSMs")
+
+#Find unique modified proteins observed in both bio rep data sets.
+pR.sites.bio_h2o2 = inner_join(pR.sites.bio_h2o2_1, pR.sites.bio_h2o2_2, by = "Protein_Index")
+
+pR.sites.bio_mock = inner_join(pR.sites.bio_mock_1, pR.sites.bio_mock_2, by = "Protein_Index")
+
+pR.sites.bio_pr8 = inner_join(pR.sites.bio_pr8_1, pR.sites.bio_pr8_2, by = "Protein_Index")
+
+pR.sites.bio_pr8delns1 = inner_join(pR.sites.bio_pr8delns1_1, pR.sites.bio_pr8delns1_2, by = "Protein_Index")
+
+pR.sites.bio_wsn = inner_join(pR.sites.bio_wsn_1, pR.sites.bio_wsn_2, by = "Protein_Index")
+
+pR.sites.bio_wsndelns1 = inner_join(pR.sites.bio_wsndelns1_1, pR.sites.bio_wsndelns1_2, by = "Protein_Index")
+
+write_tsv(pR.sites.bio_h2o2, "pR.indices_h2o2_isabel.tsv")
+write_tsv(pR.sites.bio_mock, "pR.indices_mock_isabel.tsv")
+write_tsv(pR.sites.bio_pr8, "pR.indices_pr8_isabel.tsv")
+write_tsv(pR.sites.bio_pr8delns1, "pR.indices_pR8delns1_isabel.tsv")
+write_tsv(pR.sites.bio_wsn, "pR.indices_wsn_isabel.tsv")
+write_tsv(pR.sites.bio_wsndelns1, "pR.indices_wsndelns1_isabel.tsv")
+```
+
+Find modified sites/indices that are in each stress condition (but not in mock).
+```{r}
+# pR.sites.unique_h2o2 = anti_join(pR.sites.bio_h2o2, pR.sites.bio_mock, by = "Index")
+# pR.sites.unique_pr8 = anti_join(pR.sites.bio_pr8, pR.sites.bio_mock, by = "Index")
+# pR.sites.unique_pr8delns1 = anti_join(pR.sites.bio_pr8delns1, pR.sites.bio_mock, by = "Index")
+# pR.sites.unique_wsn = anti_join(pR.sites.bio_wsn, pR.sites.bio_mock, by = "Index")
+# pR.sites.unique_wsndelns1 = anti_join(pR.sites.bio_wsndelns1, pR.sites.bio_mock, by = "Index")
+# 
+# write_tsv(pR.sites.unique_h2o2, "pR.indices.unique_h2o2_isabel.tsv")
+# write_tsv(pR.sites.unique_pr8, "pR.indices.unique_pr8_isabel.tsv")
+# write_tsv(pR.sites.unique_pr8delns1, "pR.indices.unique_pR8delns1_isabel.tsv")
+# write_tsv(pR.sites.unique_wsn, "pR.indices.unique_wsn_isabel.tsv")
+# write_tsv(pR.sites.unique_wsndelns1, "pR.indices.unique_wsndelns1_isabel.tsv")
+```

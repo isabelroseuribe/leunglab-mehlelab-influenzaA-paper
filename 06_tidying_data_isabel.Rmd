@@ -1,0 +1,227 @@
+---
+title: "MS Data Analysis - Flu Project"
+author: "Isabel Uribe"
+date: "2023-11-09"
+output: html_document
+---
+
+Read in tsv files for human and flu sites (scored).
+```{r}
+library(readr)
+library(tidyverse) ## for data wrangling
+pR.sites_isabel = read_tsv("pR_sites_isabel_scored.tsv", show_col_types = FALSE)
+```
+
+Now subset data into biological replicates based on scoring columns.
+```{r}
+column_names = c("Organism", "Index", "Protein_Index", "Modified_Residue", 
+                 "Modified_Position",
+                 "Best_Localization", "Protein_Name", "Protein_ID", "Gene", 
+                 "Peptide_Sequence", "Stripped_Modified_Sequence", "Assigned_Mods", 
+                 "M/Z", "Charge", "Tec1_PSMs", "Tec2_PSMs", "Tec3_PSMs", 
+                 "Tec1_Int", "Tec2_Int", "Tec3_Int",
+                 "Tec1_RT", "Tec2_RT", "Tec3_RT", 
+                 "Tec1_Type", "Tec2_Type", "Tec3_Type", 
+                 "Score", "Mod_Class")
+
+###h2o2
+#bio rep 1
+pR_h2o2_bio1 = pR.sites_isabel %>%
+  filter(H2O2.1_rep.score >= 2)
+pR_h2o2_bio1 = pR_h2o2_bio1 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("H2O2_bio1"), starts_with("H2O2.1"), Mod_Class)
+colnames(pR_h2o2_bio1) = column_names
+#bio rep 2
+pR_h2o2_bio2 = pR.sites_isabel %>%
+  filter(H2O2.2_rep.score >= 2)
+pR_h2o2_bio2 = pR_h2o2_bio2 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("H2O2_bio2"), starts_with("H2O2.2"), Mod_Class)
+colnames(pR_h2o2_bio2) = column_names
+
+###mock
+#bio rep 1
+pR_mock_bio1 = pR.sites_isabel %>%
+  filter(Mock.1_rep.score >= 2)
+pR_mock_bio1 = pR_mock_bio1 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("Mock_bio1"), starts_with("Mock.1"), Mod_Class)
+colnames(pR_mock_bio1) = column_names
+#bio rep 2
+pR_mock_bio2 = pR.sites_isabel %>%
+  filter(Mock.2_rep.score >= 2)
+pR_mock_bio2 = pR_mock_bio2 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("Mock_bio2"), starts_with("Mock.2"), Mod_Class)
+colnames(pR_mock_bio2) = column_names
+
+###pr8
+#bio rep 1
+pR_pr8_bio1 = pR.sites_isabel %>%
+  filter(PR8.1_rep.score >= 2)
+pR_pr8_bio1 = pR_pr8_bio1 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("PR8_bio1"), starts_with("PR8.1"), Mod_Class)
+colnames(pR_pr8_bio1) = column_names
+#bio rep 2
+pR_pr8_bio2 = pR.sites_isabel %>%
+  filter(PR8.2_rep.score >= 2)
+pR_pr8_bio2 = pR_pr8_bio2 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("PR8_bio2"), starts_with("PR8.2"), Mod_Class)
+colnames(pR_pr8_bio2) = column_names
+
+###pr8delns1
+#bio rep 1
+pR_pr8delns1_bio1 = pR.sites_isabel %>%
+  filter(PR8delNS1.1_rep.score >= 2)
+pR_pr8delns1_bio1 = pR_pr8delns1_bio1 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("PR8delNS1_bio1"), starts_with("PR8delNS1.1"), Mod_Class)
+colnames(pR_pr8delns1_bio1) = column_names
+#bio rep 2
+pR_pr8delns1_bio2 = pR.sites_isabel %>%
+  filter(PR8delNS1.2_rep.score >= 2)
+pR_pr8delns1_bio2 = pR_pr8delns1_bio2 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("PR8delNS1_bio2"), starts_with("PR8delNS1.2"), Mod_Class)
+colnames(pR_pr8delns1_bio2) = column_names
+
+###wsn
+#bio rep 1
+pR_wsn_bio1 = pR.sites_isabel %>%
+  filter(WSN.1_rep.score >= 2)
+pR_wsn_bio1 = pR_wsn_bio1 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("WSN_bio1"), starts_with("WSN.1"), Mod_Class)
+colnames(pR_wsn_bio1) = column_names
+#bio rep 2
+pR_wsn_bio2 = pR.sites_isabel %>%
+  filter(WSN.2_rep.score >= 2)
+pR_wsn_bio2 = pR_wsn_bio2 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("WSN_bio2"), starts_with("WSN.2"), Mod_Class)
+colnames(pR_wsn_bio2) = column_names
+
+###wsndelns1
+#bio rep 1
+pR_wsndelns1_bio1 = pR.sites_isabel %>%
+  filter(WSNdelNS1.1_rep.score >= 2)
+pR_wsndelns1_bio1 = pR_wsndelns1_bio1 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("WSNdelNS1_bio1"), starts_with("WSNdelNS1.1"), Mod_Class)
+colnames(pR_wsndelns1_bio1) = column_names
+#bio rep 2
+pR_wsndelns1_bio2 = pR.sites_isabel %>%
+  filter(WSNdelNS1.2_rep.score >= 2)
+pR_wsndelns1_bio2 = pR_wsndelns1_bio2 %>%
+  select(Organism, Index, Protein_Index, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`,
+         Name, `Protein ID`, Gene, `Peptide Sequence`, Stripped_Modified_Sequence,
+         `Assigned Modifications`, `M/Z`, Charge,
+         starts_with("WSNdelNS1_bio2"), starts_with("WSNdelNS1.2"), Mod_Class)
+colnames(pR_wsndelns1_bio2) = column_names
+```
+
+Add condition/rep information to dfs.
+```{r}
+## h2o2 condition
+cond = "h2o2"
+rep1 = "1"
+rep2 = "2"
+str.cond = rep(paste(cond, rep1, sep = "_"), length(pR_h2o2_bio1$Index))
+pR_h2o2_bio1$Condition = str.cond
+str.cond = rep(paste(cond, rep2, sep = "_"), length(pR_h2o2_bio2$Index))
+pR_h2o2_bio2$Condition = str.cond
+
+## mock condition
+cond = "mock"
+rep1 = "1"
+rep2 = "2"
+str.cond = rep(paste(cond, rep1, sep = "_"), length(pR_mock_bio1$Index))
+pR_mock_bio1$Condition = str.cond
+str.cond = rep(paste(cond, rep2, sep = "_"), length(pR_mock_bio2$Index))
+pR_mock_bio2$Condition = str.cond
+
+## pr8 condition
+cond = "pr8"
+rep1 = "1"
+rep2 = "2"
+str.cond = rep(paste(cond, rep1, sep = "_"), length(pR_pr8_bio1$Index))
+pR_pr8_bio1$Condition = str.cond
+str.cond = rep(paste(cond, rep2, sep = "_"), length(pR_pr8_bio2$Index))
+pR_pr8_bio2$Condition = str.cond
+
+## pr8delns1 condition
+cond = "pr8delns1"
+rep1 = "1"
+rep2 = "2"
+str.cond = rep(paste(cond, rep1, sep = "_"), length(pR_pr8delns1_bio1$Index))
+pR_pr8delns1_bio1$Condition = str.cond
+str.cond = rep(paste(cond, rep2, sep = "_"), length(pR_pr8delns1_bio2$Index))
+pR_pr8delns1_bio2$Condition = str.cond
+
+## wsn condition
+cond = "wsn"
+rep1 = "1"
+rep2 = "2"
+str.cond = rep(paste(cond, rep1, sep = "_"), length(pR_wsn_bio1$Index))
+pR_wsn_bio1$Condition = str.cond
+str.cond = rep(paste(cond, rep2, sep = "_"), length(pR_wsn_bio2$Index))
+pR_wsn_bio2$Condition = str.cond
+
+## wsndelns1 condition
+cond = "wsndelns1"
+rep1 = "1"
+rep2 = "2"
+str.cond = rep(paste(cond, rep1, sep = "_"), length(pR_wsndelns1_bio1$Index))
+pR_wsndelns1_bio1$Condition = str.cond
+str.cond = rep(paste(cond, rep2, sep = "_"), length(pR_wsndelns1_bio2$Index))
+pR_wsndelns1_bio2$Condition = str.cond
+```
+
+Combine dataframes then calculate total PSMs for each peptide.
+```{r}
+pR_sites_long = rbind(pR_h2o2_bio1, pR_h2o2_bio2, pR_mock_bio1, pR_mock_bio2,
+                          pR_pr8_bio1, pR_pr8_bio2, pR_pr8delns1_bio1, 
+                          pR_pr8delns1_bio2, pR_wsn_bio1, pR_wsn_bio2,
+                          pR_wsndelns1_bio1, pR_wsndelns1_bio2)
+pR_sites_long = mutate(pR_sites_long, Total_PSMs = Tec1_PSMs + Tec2_PSMs + Tec3_PSMs)
+
+#write tsv file to use with ggplotting script
+write_tsv(pR_sites_long, "tidy_sites_Isabel.tsv")
+```

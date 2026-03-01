@@ -1,0 +1,85 @@
+---
+title: "MS Data Analysis - Flu Project"
+author: "Isabel Uribe"
+date: "2023-11-09"
+output: html_document
+---
+
+Combine mod 212 and mod combined ion data frames.
+```{r}
+pR = inner_join(mods_212, mod_combined_ion, by = "Index")
+
+pR_sites = pR %>%
+  select(Organism, Index, Mod_Class, Modified_Residue, Modified_Position, 
+         `Best Localization Probability`, Name, `Protein ID`, Gene, 
+         `Peptide Sequence`, Stripped_Modified_Sequence, `Assigned Modifications`, 
+         `M/Z`, Charge,
+         ends_with("Spectral Count"), ends_with("Intensity.y"), 
+         ends_with("Retention Time"), ends_with("Match Type"))
+
+write_tsv(pR_sites, "pR_sites_Isabel.tsv")
+```
+
+
+<!-- Determine which sites are identified in at least two technical replicates based on Intensity values. -->
+
+
+<!-- Extract condition names from data set. -->
+<!-- Then create additional column for each condition that includes boolean for whether peptide passes threshold for specific condition. Would need to modify indexing for different data sets based on number of replicates. -->
+<!-- ```{r} -->
+<!-- cons = c() -->
+<!-- attrs = colnames(pR_sites) -->
+<!-- intensity = attrs[!is.na(str_match(attrs, "Intensity.y"))] -->
+<!-- for (attr in intensity) { -->
+<!--   cons = append(cons, str_split(attr, "_")[[1]][1]) -->
+<!-- } -->
+<!-- cons = unique(cons) -->
+<!-- cons -->
+
+<!-- for (con in cons) { -->
+<!--   # extracts first 6 to avoid duplicate matches -->
+<!--   temp_cols = intensity[!is.na(str_match(intensity, con))][1:6] -->
+
+<!--   temp = pR_sites %>% select(all_of(temp_cols)) -->
+<!--   temp = temp > 0 -->
+
+<!--   # index range can be modified based on number of replicates -->
+<!--   sum1 = rowSums(temp[, 1:3]) -->
+<!--   sum2 = rowSums(temp[, 4:6]) -->
+
+<!--   pR_sites[paste(con, "1_int")] = sum1 >= 2 -->
+<!--   pR_sites[paste(con, "2_int")] = sum2 >= 2 -->
+<!-- } -->
+<!-- ``` -->
+
+
+<!-- Determine which sites are identified in at least two technical replicates based on PSM values. -->
+
+
+<!-- Extract condition names from data set. -->
+<!-- Then create additional column for each condition that includes boolean for whether peptide passes threshold for specific condition. Would need to modify indexing for different data sets based on number of replicates. -->
+<!-- ```{r} -->
+<!-- cons = c() -->
+<!-- attrs = colnames(pR_sites) -->
+<!-- spectral = attrs[!is.na(str_match(attrs, "Spectral Count"))] -->
+<!-- for (attr in spectral) { -->
+<!--   cons = append(cons, str_split(attr, "_")[[1]][1]) -->
+<!-- } -->
+<!-- cons = unique(cons) -->
+<!-- cons -->
+
+<!-- for (con in cons) { -->
+<!--   # extracts first 6 to avoid duplicate matches -->
+<!--   temp_cols = spectral[!is.na(str_match(spectral, con))][1:6] -->
+
+<!--   temp = pR_sites %>% select(all_of(temp_cols)) -->
+<!--   temp = temp > 0 -->
+
+<!--   # index range can be modified based on number of replicates -->
+<!--   sum3 = rowSums(temp[, 1:3]) -->
+<!--   sum4 = rowSums(temp[, 4:6]) -->
+
+<!--   pR_sites[paste(con, "1_psm")] = sum3 >= 2 -->
+<!--   pR_sites[paste(con, "2_psm")] = sum4 >= 2 -->
+<!-- } -->
+<!-- ``` -->
